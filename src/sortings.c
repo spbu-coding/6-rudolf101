@@ -109,8 +109,8 @@ void radix(strings_array_t strings_array, array_size_t number_of_rows_to_sort, c
     unsigned lines_via_symbol[ASCII_SIZE][number_of_rows_to_sort];
 
     for (array_size_t i = 0; i < number_of_rows_to_sort; ++i) {
-        lines_via_symbol[strings_array[i][radix_num]][symbols[strings_array[i][radix_num]]] = i;
-        symbols[strings_array[i][radix_num]]++;
+        lines_via_symbol[(unsigned)strings_array[i][radix_num]][symbols[(unsigned)strings_array[i][radix_num]]] = i;
+        symbols[(unsigned)strings_array[i][radix_num]]++;
     }
 
     array_size_t count = 0;
