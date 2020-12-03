@@ -37,6 +37,7 @@ int read_from_file(strings_array_t strings_array, array_size_t number_of_rows_to
     for(array_size_t i = 0; i < number_of_rows_to_sort; ++i){
         if(fgets(strings_array[i], MAX_INPUT_STRING_SIZE, input_file) == NULL){
             error("Unable to read %zu line in the file.\n", i + 1);
+            fclose(input_file);
             return -1;
         }
         // We check whether there is a transition to a new line at the end of each line, if not, we add it.
@@ -56,6 +57,7 @@ int print_to_file(strings_array_t strings_array, array_size_t number_of_rows_to_
     }
     for(array_size_t i = 0; i < number_of_rows_to_sort; ++i){
         if(fputs(strings_array[i], output_file) == EOF){
+            fclose(output_file);
             error("Unable to write %zu line to the file\n", i + 1);
             return -1;
         }
@@ -79,14 +81,26 @@ int main(int argc, char *argv[]) {
     }
 
     char *EndPtr = argv[1];
-    array_size_t number_of_rows_to_sort = strtol(argv[1], &EndPtr, DECIMAL_NOTATION);
-    if (strlen(EndPtr)) {
-        error("The number of rows must be a number, invalid data was found: %s\n", EndPtr);
+    int rows_count = strtol(argv[1], &EndPtr, DECIMAL_NOTATION);
+    if (strlen(EndPtr) || rows_count < 0) {
+        error("The number of rows must be a positive number, invalid data was found: %s\n", argv[1]);
         return -1;
     }
-
+    array_size_t number_of_rows_to_sort = rows_count;
     char *input_file_name = argv[2];
     char *output_file_name = argv[3];
+
+    int last_return_value;
+    if(number_of_rows_to_sort == 0){
+        FILE *output_file;
+        if ((output_file = fopen(output_file_name, "wb")) == NULL) {
+            error("Unable to open output file, check the permission to create files in the folder.\n");
+            return -1;
+        }
+        fputs("\n", output_file);
+        fclose(output_file);
+        return 0;
+    }
 
     char *name_of_sorting_functions[NUMBER_OF_SORTS] = {"bubble", "insertion", "merge", "quick", "radix"};
     sort_func_t sorting_functions[NUMBER_OF_SORTS] = {&bubble, &insertion, &merge, &quick, &radix};
@@ -131,15 +145,19 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    int return_value = read_from_file(strings_array, number_of_rows_to_sort, input_file_name);
-    if(return_value)
-        return return_value;
+    last_return_value = read_from_file(strings_array, number_of_rows_to_sort, input_file_name);
+    if(last_return_value) {
+        free_array(strings_array, number_of_rows_to_sort);
+        return last_return_value;
+    }
 
     sorting_method(strings_array, number_of_rows_to_sort, comparing_method);
 
-    return_value = print_to_file(strings_array, number_of_rows_to_sort, output_file_name);
-    if(return_value)
-        return return_value;
+    last_return_value = print_to_file(strings_array, number_of_rows_to_sort, output_file_name);
+    if(last_return_value) {
+        free_array(strings_array, number_of_rows_to_sort);
+        return last_return_value;
+    }
 
     free_array(strings_array, number_of_rows_to_sort);
     return 0;
